@@ -1,0 +1,158 @@
+@page "/chemical/add"
+@page "/chemical/edit/{Id:int}"
+@using VibeMapper.Core.Models
+@using VibeMapper.Application.Interfaces
+@rendermode InteractiveServer
+@inject IChemicalService ChemicalService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(Id == 0 ? "Create Chemical" : "Edit Chemical")</PageTitle>
+
+<MudText Typo="Typo.h3" GutterBottom="true">@(Id == 0 ? "Create Chemical" : "Edit Chemical")</MudText>
+
+<MudPaper Class="pa-4" Elevation="3" Outlined="true">
+    <EditForm Model="@chemical" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <MudGrid>
+            <MudItem xs="12" md="4">
+                <MudTextField Label="Name" @bind-Value="chemical.Name" For="@(() => chemical.Name)" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTextField Label="CAS Number" @bind-Value="chemical.CASNumber" For="@(() => chemical.CASNumber)" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudTextField Label="EC Number" @bind-Value="chemical.ECNumber" For="@(() => chemical.ECNumber)" Variant="Variant.Outlined" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudDivider Class="my-4" />
+                <MudText Typo="Typo.h5" Class="mb-2">DNELs</MudText>
+                @if (chemical.DNELs != null)
+                {
+                    for (int i = 0; i < chemical.DNELs.Count; i++)
+                    {
+                        var index = i;
+                        var dnel = chemical.DNELs[index];
+                        <MudPaper Class="p-4 mb-3" Elevation="2">
+                            <MudGrid>
+                                <MudItem xs="12" sm="6" md="2">
+                                    <MudTextField Label="Exposure Route" @bind-Value="dnel.ExposureRoute" Variant="Variant.Text" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="2">
+                                    <MudTextField Label="Exposed Group" @bind-Value="dnel.ExposedGroup" Variant="Variant.Text" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="2">
+                                    <MudTextField Label="Exposure Type" @bind-Value="dnel.ExposureType" Variant="Variant.Text" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="2">
+                                    <MudNumericField Label="Value" @bind-Value="dnel.Value" Variant="Variant.Text" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="2">
+                                    <MudTextField Label="Unit" @bind-Value="dnel.Unit" Variant="Variant.Text" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="2" Class="d-flex align-center justify-end">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="() => RemoveDnel(index)" />
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    }
+                }
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="AddDnel" StartIcon="@Icons.Material.Filled.Add">Add DNEL</MudButton>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudDivider Class="my-4" />
+                <MudText Typo="Typo.h5" Class="mb-2">PNECs</MudText>
+                @if (chemical.PNECs != null)
+                {
+                    for (int i = 0; i < chemical.PNECs.Count; i++)
+                    {
+                        var index = i;
+                        var pnec = chemical.PNECs[index];
+                        <MudPaper Class="p-4 mb-3" Elevation="2">
+                            <MudGrid>
+                                <MudItem xs="12" sm="6" md="3">
+                                    <MudTextField Label="Compartment" @bind-Value="pnec.Compartment" Variant="Variant.Text" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="3">
+                                    <MudNumericField Label="Value" @bind-Value="pnec.Value" Variant="Variant.Text" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="3">
+                                    <MudTextField Label="Unit" @bind-Value="pnec.Unit" Variant="Variant.Text" />
+                                </MudItem>
+                                <MudItem xs="12" sm="6" md="3" Class="d-flex align-center justify-end">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="() => RemovePnec(index)" />
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    }
+                }
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="AddPnec" StartIcon="@Icons.Material.Filled.Add">Add PNEC</MudButton>
+            </MudItem>
+
+            <MudItem xs="12" Class="mt-4">
+                <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="mr-2">Save</MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="Cancel">Cancel</MudButton>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+</MudPaper>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Chemical chemical = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id != 0)
+        {
+            chemical = await ChemicalService.GetChemicalByIdAsync(Id) ?? new();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (Id == 0)
+        {
+            await ChemicalService.CreateChemicalAsync(chemical);
+        }
+        else
+        {
+            await ChemicalService.UpdateChemicalAsync(chemical);
+        }
+        NavigationManager.NavigateTo("/chemicals");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/chemicals");
+    }
+
+    private void AddDnel()
+    {
+        chemical.DNELs.Add(new DNEL());
+    }
+
+    private void RemoveDnel(int index)
+    {
+        if (index >= 0 && index < chemical.DNELs.Count)
+        {
+            chemical.DNELs.RemoveAt(index);
+        }
+    }
+
+    private void AddPnec()
+    {
+        chemical.PNECs.Add(new PNEC());
+    }
+
+    private void RemovePnec(int index)
+    {
+        if (index >= 0 && index < chemical.PNECs.Count)
+        {
+            chemical.PNECs.RemoveAt(index);
+        }
+    }
+}

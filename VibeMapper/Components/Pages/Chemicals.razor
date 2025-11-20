@@ -1,0 +1,136 @@
+@page "/chemicals"
+@rendermode InteractiveServer
+@using VibeMapper.Application.Interfaces
+@using VibeMapper.Core.Models
+@inject IChemicalService ChemicalService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Chemicals</PageTitle>
+
+<MudText Typo="Typo.h3" GutterBottom="true">Chemicals</MudText>
+<MudText Typo="Typo.body1" Class="mb-4">This component shows a list of chemicals with their DNEL and PNEC values.</MudText>
+
+@if (chemicals == null)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/chemical/add" Class="mb-4">Add Chemical</MudButton>
+
+    <MudTable Items="@chemicals" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@(chemicals == null)" LoadingProgressColor="Color.Info" Elevation="3" Outlined="true" Bordered="true" @bind-ExpandedItems="_expandedItems" OnRowClick="OnRowClick" T="Chemical">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>CAS</MudTh>
+            <MudTh>EC</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+            <MudTd DataLabel="CAS">@context.CASNumber</MudTd>
+            <MudTd DataLabel="EC">@context.ECNumber</MudTd>
+            <MudTd DataLabel="Actions">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Href="@($"/chemical/edit/{context.Id}")" />
+                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => DeleteChemical(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+        <ChildRowContent>
+            @if (_expandedItems.Contains(context))
+            {
+                <MudTr>
+                    <td colspan="4">
+                        <MudCard Elevation="0">
+                            <MudCardHeader>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">Details for @context.Name</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudGrid>
+                                    <MudItem xs="12" md="6">
+                                        <MudText Typo="Typo.subtitle1">DNELs</MudText>
+                                        @if (context.DNELs.Any())
+                                        {
+                                            <MudTable Items="@context.DNELs" Context="dnel" Elevation="0">
+                                                <HeaderContent>
+                                                    <MudTh>Group</MudTh>
+                                                    <MudTh>Route</MudTh>
+                                                    <MudTh>Type</MudTh>
+                                                    <MudTh>Value</MudTh>
+                                                    <MudTh>Unit</MudTh>
+                                                </HeaderContent>
+                                                <RowTemplate>
+                                                    <MudTd>@dnel.ExposedGroup</MudTd>
+                                                    <MudTd>@dnel.ExposureRoute</MudTd>
+                                                    <MudTd>@dnel.ExposureType</MudTd>
+                                                    <MudTd>@dnel.Value</MudTd>
+                                                    <MudTd>@dnel.Unit</MudTd>
+                                                </RowTemplate>
+                                            </MudTable>
+                                        }
+                                        else
+                                        {
+                                            <MudText>No DNEL data available.</MudText>
+                                        }
+                                    </MudItem>
+                                    <MudItem xs="12" md="6">
+                                        <MudText Typo="Typo.subtitle1">PNECs</MudText>
+                                        @if (context.PNECs.Any())
+                                        {
+                                            <MudTable Items="@context.PNECs" Context="pnec" Elevation="0">
+                                                <HeaderContent>
+                                                    <MudTh>Compartment</MudTh>
+                                                    <MudTh>Value</MudTh>
+                                                    <MudTh>Unit</MudTh>
+                                                </HeaderContent>
+                                                <RowTemplate>
+                                                    <MudTd>@pnec.Compartment</MudTd>
+                                                    <MudTd>@pnec.Value</MudTd>
+                                                    <MudTd>@pnec.Unit</MudTd>
+                                                </RowTemplate>
+                                            </MudTable>
+                                        }
+                                        else
+                                        {
+                                            <MudText>No PNEC data available.</MudText>
+                                        }
+                                    </MudItem>
+                                </MudGrid>
+                            </MudCardContent>
+                        </MudCard>
+                    </td>
+                </MudTr>
+            }
+        </ChildRowContent>
+    </MudTable>
+}
+
+@code {
+    private IEnumerable<Chemical>? chemicals;
+    private HashSet<Chemical> _expandedItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        chemicals = await ChemicalService.GetChemicalsAsync();
+    }
+
+    private async Task DeleteChemical(int id)
+    {
+        await ChemicalService.DeleteChemicalAsync(id);
+        chemicals = await ChemicalService.GetChemicalsAsync();
+        StateHasChanged();
+    }
+
+    private void OnRowClick(TableRowClickEventArgs<Chemical> args)
+    {
+        if (_expandedItems.Contains(args.Item))
+        {
+            _expandedItems.Clear();
+        }
+        else
+        {
+            _expandedItems.Clear();
+            _expandedItems.Add(args.Item);
+        }
+    }
+}

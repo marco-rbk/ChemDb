@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="VibeMapper.Application/VibeMapper.Application.csproj" />
+  <Project Path="VibeMapper.Core/VibeMapper.Core.csproj" />
+  <Project Path="VibeMapper.Infrastructure/VibeMapper.Infrastructure.csproj" />
+  <Project Path="VibeMapper/VibeMapper.csproj" />
+</Solution>
